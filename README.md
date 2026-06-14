@@ -24,23 +24,53 @@ If an LLM key is configured, `ask` feeds the top-ranked chunks to the model and 
 
 ## Installation
 
-RepoScope is not yet on PyPI. Install from source:
+### Recommended — pipx (all platforms, including Windows)
+
+[pipx](https://pipx.pypa.io) installs CLI tools into isolated environments and automatically puts the command on your PATH — no manual PATH configuration needed.
 
 ```bash
-git clone https://github.com/nirakar24/RepoScope.git
-cd RepoScope
-pip install -e .
+pipx install repointel
 ```
 
 To add optional features:
 
 ```bash
-pip install -e ".[embed]"   # semantic search (downloads ~80 MB model on first use)
-pip install -e ".[claude]"  # Anthropic Claude for LLM answers
-pip install -e ".[gemini]"  # Google Gemini for LLM answers
-pip install -e ".[openai]"  # OpenAI for LLM answers and embeddings
-pip install -e ".[api]"     # FastAPI server
-pip install -e ".[all]"     # everything
+pipx install "repointel[embed]"   # semantic search (downloads ~80 MB model on first use)
+pipx install "repointel[claude]"  # Anthropic Claude for LLM answers
+pipx install "repointel[gemini]"  # Google Gemini for LLM answers
+pipx install "repointel[openai]"  # OpenAI for LLM answers and embeddings
+pipx install "repointel[all]"     # everything
+```
+
+Install pipx itself with `pip install pipx` or `brew install pipx` (macOS).
+
+### Alternative — pip
+
+```bash
+pip install repointel
+```
+
+> **Windows note:** pip installs the `repointel` script to your Python `Scripts\` directory, which may not be on your PATH. If `repointel` is not found after installing, either add that directory to PATH or use the module fallback instead:
+> ```powershell
+> python -m repointel configure
+> ```
+
+To add optional features:
+
+```bash
+pip install "repointel[embed]"
+pip install "repointel[claude]"
+pip install "repointel[gemini]"
+pip install "repointel[openai]"
+pip install "repointel[all]"
+```
+
+### From source
+
+```bash
+git clone https://github.com/nirakar24/reposcope.git
+cd reposcope
+pip install -e ".[all]"
 ```
 
 ---

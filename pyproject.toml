@@ -1,6 +1,6 @@
 [project]
 name = "repointel"
-version = "0.1.0"
+version = "0.1.1"
 description = "Local-first codebase-aware AI: index any repo and ask questions about it."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -35,6 +35,9 @@ repointel = "reposcope.cli:main"
 [project.urls]
 Repository = "https://github.com/nirakar24/reposcope"
 "Bug Tracker" = "https://github.com/nirakar24/reposcope/issues"
+
+[tool.setuptools.packages.find]
+include = ["reposcope*", "repointel*"]
 
 [build-system]
 requires = ["setuptools>=68"]
