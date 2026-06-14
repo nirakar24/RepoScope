@@ -1,5 +1,5 @@
 [project]
-name = "repolens"
+name = "repointel"
 version = "0.1.0"
 description = "Local-first codebase-aware AI: index any repo and ask questions about it."
 readme = "README.md"
@@ -30,7 +30,7 @@ all    = ["fastapi>=0.115", "uvicorn>=0.30", "openai>=1.0", "google-genai>=0.6",
 dev    = ["pytest>=8.0"]
 
 [project.scripts]
-repolens = "reposcope.cli:main"
+repointel = "reposcope.cli:main"
 
 [project.urls]
 Repository = "https://github.com/nirakar24/reposcope"

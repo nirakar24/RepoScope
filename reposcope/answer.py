@@ -9,7 +9,7 @@ from textwrap import shorten
 from .models import SearchResult
 
 
-USER_CONFIG_DIR = Path.home() / ".config" / "repolens"
+USER_CONFIG_DIR = Path.home() / ".config" / "repointel"
 USER_CONFIG_ENV = USER_CONFIG_DIR / ".env"
 
 
