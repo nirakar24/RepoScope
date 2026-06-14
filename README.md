@@ -1,80 +1,63 @@
 # RepoScope
 
-A local-first, codebase-aware AI tool. Point it at any repository, and ask questions about the code in plain English.
-
-No cloud indexing. No background services. No mandatory API keys. Your code stays on your machine.
+A local-first tool for querying codebases in plain English. Point it at any repository, build an index, and ask questions — no cloud sync, no background services, no mandatory API keys.
 
 ---
 
 ## How it works
 
+**Without `--embed` (default):**
 ```
-your repo → file discovery → symbol-aware chunking → JSON index → BM25 retrieval → LLM answer
+repo → file discovery → chunking → JSON index → BM25 retrieval → LLM answer
 ```
 
-RepoScope walks your project, breaks files into logical chunks (by function, class, or method), stores them in a local JSON index, and ranks them with BM25 scoring when you search. If you configure an LLM key, it synthesises a cited answer from the top matches.
+**With `--embed` (semantic search):**
+```
+repo → file discovery → chunking → JSON index + .npy embeddings → BM25 + vector → RRF merge → LLM answer
+```
+
+RepoScope walks your project and breaks files into chunks — by function, class, or method boundary for Python, JS/TS, and C# (using regex-based detection), and by fixed line windows for everything else. Chunks are stored in a local JSON index and ranked with BM25 scoring at query time. If you run `index --embed`, it also generates sentence embeddings and merges the two results with Reciprocal Rank Fusion for better semantic matches.
+
+If an LLM key is configured, `ask` feeds the top-ranked chunks to the model and returns a cited answer. If not, it falls back to showing the top matches with previews.
 
 ---
 
 ## Installation
 
-Requires Python 3.11 or later. After installing, `reposcope --help` should work immediately — no further setup required.
-
-### Recommended: pipx (isolated environment, command available globally)
+RepoScope is not yet on PyPI. Install from source:
 
 ```bash
-pipx install reposcope
-```
-
-### With uv
-
-```bash
-uv tool install reposcope
-```
-
-### With pip
-
-```bash
-pip install reposcope
-```
-
-### Add-ons
-
-Install extras for the features you want:
-
-```bash
-pip install "reposcope[embed]"   # semantic search (sentence-transformers, ~80 MB model)
-pip install "reposcope[claude]"  # Anthropic Claude for LLM answers
-pip install "reposcope[gemini]"  # Google Gemini for LLM answers
-pip install "reposcope[openai]"  # OpenAI for LLM answers and embeddings
-pip install "reposcope[all]"     # everything
-```
-
-### From source
-
-```bash
-git clone https://github.com/nirakar24/reposcope.git
-cd reposcope
+git clone https://github.com/nirakar24/RepoScope.git
+cd RepoScope
 pip install -e .
+```
+
+To add optional features:
+
+```bash
+pip install -e ".[embed]"   # semantic search (downloads ~80 MB model on first use)
+pip install -e ".[claude]"  # Anthropic Claude for LLM answers
+pip install -e ".[gemini]"  # Google Gemini for LLM answers
+pip install -e ".[openai]"  # OpenAI for LLM answers and embeddings
+pip install -e ".[api]"     # FastAPI server
+pip install -e ".[all]"     # everything
 ```
 
 ---
 
 ## Setting up an LLM API key
 
-`search` and `index` work with no API key. The `ask` command needs one to generate answers.
+`index` and `search` work with no API key. `ask` needs one to generate answers.
 
-### The easy way — interactive setup
+### Interactive setup (recommended)
 
 ```bash
 reposcope configure
 ```
 
-This prompts you to choose a provider, paste your key (input is hidden), and saves it to `~/.config/reposcope/.env`. It's picked up automatically from then on, in any directory.
+Prompts for your provider and key (input is hidden), then saves to `~/.config/reposcope/.env`. Picked up automatically in every session and directory from then on.
 
 ```
-RepoScope — LLM configuration
-
 Which provider do you want to use for 'ask' answers?
   1) Anthropic Claude
   2) Google Gemini
@@ -86,49 +69,56 @@ Google Gemini API key (input hidden):
 Saved GEMINI_API_KEY to ~/.config/reposcope/.env
 ```
 
-### Manually — environment variable
+### Environment variable
 
-Set the key in your shell profile (`~/.bashrc`, `~/.zshrc`, etc.) and it will be available in every session:
+Add to your shell profile (`~/.bashrc`, `~/.zshrc`, etc.):
 
 ```bash
-export ANTHROPIC_API_KEY="sk-ant-..."   # Claude (recommended)
-export GEMINI_API_KEY="AIza..."         # Gemini
-export OPENAI_API_KEY="sk-..."          # OpenAI
+export ANTHROPIC_API_KEY="sk-ant-..."
+export GEMINI_API_KEY="AIza..."
+export OPENAI_API_KEY="sk-..."
 ```
 
-### Manually — `.env` file
+### `.env` file
 
-Create a `.env` file in your project directory or any parent directory. RepoScope walks up from the current directory automatically:
+Create a `.env` in your project directory or any parent. RepoScope walks up from the current directory automatically:
 
-```bash
-# .env
+```
 GEMINI_API_KEY=AIza...
 ```
 
-### Priority order
+### Provider priority and model overrides
 
-If multiple keys are present, RepoScope tries them in this order: **Claude → Gemini → OpenAI**.
+If multiple keys are present, the order is: **Claude → Gemini → OpenAI**.
+
+Override the default model with environment variables:
+
+```bash
+REPOSCOPE_CLAUDE_MODEL=claude-sonnet-4-6
+REPOSCOPE_GEMINI_MODEL=gemini-2.5-flash
+REPOSCOPE_OPENAI_MODEL=gpt-4.1-mini
+```
 
 ### Where to get keys
 
-| Provider | Link | Free tier |
+| Provider | Free tier | Key page |
 |---|---|---|
-| Anthropic Claude | https://console.anthropic.com | No (pay-as-you-go) |
-| Google Gemini | https://aistudio.google.com/apikey | Yes |
-| OpenAI | https://platform.openai.com/api-keys | No (pay-as-you-go) |
+| Google Gemini | Yes | https://aistudio.google.com/apikey |
+| Anthropic Claude | No | https://console.anthropic.com |
+| OpenAI | No | https://platform.openai.com/api-keys |
 
 ---
 
 ## Quick start
 
 ```bash
-# 1. Index your project
-reposcope index /path/to/your/project
+# Index your project
+reposcope index /path/to/project
 
-# 2. Search it (instant, no LLM needed)
+# Search (instant, no LLM)
 reposcope search "where is authentication handled"
 
-# 3. Ask a question (requires an LLM key — see Configuration)
+# Ask a question (requires an LLM key)
 reposcope ask "how does the database schema relate to the API routes?"
 ```
 
@@ -136,34 +126,47 @@ reposcope ask "how does the database schema relate to the API routes?"
 
 ## Commands
 
+### `configure`
+Interactive first-time setup. Saves your LLM API key to `~/.config/reposcope/.env`.
+
+```bash
+reposcope configure
+```
+
+---
+
 ### `index`
-Scans a directory and writes a local JSON index.
+Walks a directory, chunks its files, and writes a JSON index.
 
 ```bash
 reposcope index /path/to/project
 ```
 
-Add `--embed` to also generate semantic embeddings alongside the index (requires the `[embed]` extra). Search and ask commands detect the `.npy` file automatically and switch to hybrid retrieval — no extra flags needed at query time.
+Add `--embed` to generate sentence embeddings alongside the index. Once present, `search` and `ask` automatically switch to hybrid retrieval — no extra flag needed at query time.
 
 ```bash
 reposcope index /path/to/project --embed
 ```
 
-By default the index is saved to `.reposcope/index.json` in your current directory. Use `--index-file` to choose a different path — useful when you maintain indexes for multiple projects.
+Use `--index-file` (before the subcommand) to control where the index is written. Useful for keeping separate indexes per project:
 
 ```bash
-reposcope --index-file .reposcope/myproject.json index /path/to/project --embed
+reposcope --index-file .reposcope/backend.json index ./backend --embed
 ```
+
+The default path is `.reposcope/index.json` in the current directory.
 
 ---
 
 ### `search`
-Ranks chunks against your query using BM25. Instant. No network call.
+Retrieves the most relevant chunks for a query. Instant — no network call.
+
+Uses BM25 by default. Automatically switches to hybrid BM25 + vector search if embeddings exist for the current index.
 
 ```bash
 reposcope search "JWT token validation"
 reposcope search "database migration" --top-k 5
-reposcope search "controller routes" --json   # machine-readable output
+reposcope search "controller routes" --json
 ```
 
 | Flag | Default | Description |
@@ -174,14 +177,14 @@ reposcope search "controller routes" --json   # machine-readable output
 ---
 
 ### `ask`
-Retrieves the top matching chunks and sends them to an LLM for a cited answer.
+Retrieves top chunks and sends them to an LLM for a cited answer.
 
 ```bash
 reposcope ask "how does authentication work?"
 reposcope ask "what entities exist in the database?" --top-k 12
 ```
 
-Falls back to showing top matches with previews if no LLM key is configured.
+Falls back to listing top matches with text previews if no LLM key is set.
 
 ---
 
@@ -197,37 +200,16 @@ reposcope stats
   "files_indexed": 72,
   "chunks_indexed": 428,
   "languages": { "csharp": 160, "javascript": 25, "json": 221 },
-  "kinds": { "method": 117, "block": 247, "class": 25 }
+  "kinds": { "method": 117, "block": 247, "class": 25 },
+  "embeddings": ".reposcope/index.npy"
 }
 ```
 
 ---
 
-## Configuration
+## Multiple projects
 
-Create a `.env` file anywhere in your project tree (or in the directory you run `reposcope` from). RepoScope reads it automatically on the first `ask` command.
-
-```bash
-# .env
-
-# Pick one (or more — Claude is tried first, then Gemini, then OpenAI)
-ANTHROPIC_API_KEY=sk-ant-...
-GEMINI_API_KEY=AIza...
-OPENAI_API_KEY=sk-...
-
-# Optional: override the default model for each provider
-REPOSCOPE_CLAUDE_MODEL=claude-sonnet-4-6
-REPOSCOPE_GEMINI_MODEL=gemini-2.5-flash
-REPOSCOPE_OPENAI_MODEL=gpt-4.1-mini
-```
-
-`search` and `index` never make network calls regardless of whether a key is set.
-
----
-
-## Managing multiple projects
-
-Use `--index-file` to keep a separate index per project. The flag goes before the subcommand.
+Use `--index-file` to maintain separate indexes. The flag goes before the subcommand.
 
 ```bash
 reposcope --index-file .reposcope/frontend.json index ./frontend
@@ -241,8 +223,6 @@ reposcope --index-file .reposcope/backend.json  ask "what database tables exist?
 
 ## Optional REST API
 
-Install the API extra and start the server:
-
 ```bash
 pip install -e ".[api]"
 uvicorn reposcope.api:app --reload
@@ -250,41 +230,40 @@ uvicorn reposcope.api:app --reload
 
 | Method | Endpoint | Body |
 |---|---|---|
-| `POST` | `/index` | `{ "path": "/abs/path/to/repo" }` |
+| `POST` | `/index` | `{ "path": "/abs/path/to/repo", "embed": false }` |
 | `POST` | `/search` | `{ "query": "...", "top_k": 8 }` |
 | `POST` | `/ask` | `{ "query": "...", "top_k": 8 }` |
 | `GET` | `/stats` | — |
 
-Interactive docs are at `http://localhost:8000/docs`.
+Docs at `http://localhost:8000/docs`.
 
 ---
 
 ## Supported languages
 
-| Language | Chunking strategy |
+| Language | Chunking |
 |---|---|
-| Python | Functions and classes (regex AST) |
-| JavaScript / TypeScript / JSX / TSX | Functions, classes, arrow functions |
-| C# | Classes, interfaces, records, methods |
-| SQL, Markdown, JSON, YAML, TOML, CSS, SCSS, HTML | Line-window with 15-line overlap |
-| Dockerfile, Makefile, `.gitignore` | Line-window |
+| Python | Regex-based: splits at `def` / `async def` / `class` boundaries |
+| JavaScript / TypeScript / JSX / TSX | Regex-based: splits at `function`, `class`, and arrow function boundaries |
+| C# | Regex-based: splits at class, interface, record, struct, and method boundaries |
+| SQL, Markdown, JSON, YAML, TOML, CSS, SCSS, HTML, Dockerfile, Makefile | Fixed 80-line windows with 15-line overlap |
 
-Files larger than 750 KB and generated lock files (`package-lock.json`, `yarn.lock`, etc.) are skipped automatically.
+Files over 750 KB and generated lock files (`package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`) are skipped.
 
 ---
 
-## What gets ignored
+## Ignored directories
 
-`node_modules`, `.git`, `dist`, `build`, `bin`, `obj`, `.venv`, `__pycache__`, `.next`, `.nuxt`, `coverage`, and other standard build/cache directories are excluded by default.
+`node_modules`, `.git`, `dist`, `build`, `bin`, `obj`, `.venv`, `__pycache__`, `.next`, `.nuxt`, `coverage`, `target`, `temp`, `vendor`, and other standard build/cache directories are excluded automatically.
 
 ---
 
 ## Roadmap
 
-- [ ] Tree-sitter chunking for precise AST boundaries
+- [ ] Tree-sitter chunking for true AST-level boundaries (replacing the regex approach)
 - [ ] Incremental re-indexing on file change
 - [ ] Cross-repo index merging for monorepos
-- [ ] Qdrant / Chroma backend for large repositories (>50k chunks)
+- [ ] Qdrant / Chroma backend for repositories with >50k chunks
 
 ---
 
