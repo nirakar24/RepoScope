@@ -52,10 +52,10 @@ pip install -e ".[all]"     # everything
 ### Interactive setup (recommended)
 
 ```bash
-reposcope configure
+repolens configure
 ```
 
-Prompts for your provider and key (input is hidden), then saves to `~/.config/reposcope/.env`. Picked up automatically in every session and directory from then on.
+Prompts for your provider and key (input is hidden), then saves to `~/.config/repolens/.env`. Picked up automatically in every session and directory from then on.
 
 ```
 Which provider do you want to use for 'ask' answers?
@@ -66,7 +66,7 @@ Which provider do you want to use for 'ask' answers?
 Enter 1, 2, or 3: 2
 
 Google Gemini API key (input hidden):
-Saved GEMINI_API_KEY to ~/.config/reposcope/.env
+Saved GEMINI_API_KEY to ~/.config/repolens/.env
 ```
 
 ### Environment variable
@@ -113,13 +113,13 @@ REPOSCOPE_OPENAI_MODEL=gpt-4.1-mini
 
 ```bash
 # Index your project
-reposcope index /path/to/project
+repolens index /path/to/project
 
 # Search (instant, no LLM)
-reposcope search "where is authentication handled"
+repolens search "where is authentication handled"
 
 # Ask a question (requires an LLM key)
-reposcope ask "how does the database schema relate to the API routes?"
+repolens ask "how does the database schema relate to the API routes?"
 ```
 
 ---
@@ -127,10 +127,10 @@ reposcope ask "how does the database schema relate to the API routes?"
 ## Commands
 
 ### `configure`
-Interactive first-time setup. Saves your LLM API key to `~/.config/reposcope/.env`.
+Interactive first-time setup. Saves your LLM API key to `~/.config/repolens/.env`.
 
 ```bash
-reposcope configure
+repolens configure
 ```
 
 ---
@@ -139,19 +139,19 @@ reposcope configure
 Walks a directory, chunks its files, and writes a JSON index.
 
 ```bash
-reposcope index /path/to/project
+repolens index /path/to/project
 ```
 
 Add `--embed` to generate sentence embeddings alongside the index. Once present, `search` and `ask` automatically switch to hybrid retrieval — no extra flag needed at query time.
 
 ```bash
-reposcope index /path/to/project --embed
+repolens index /path/to/project --embed
 ```
 
 Use `--index-file` (before the subcommand) to control where the index is written. Useful for keeping separate indexes per project:
 
 ```bash
-reposcope --index-file .reposcope/backend.json index ./backend --embed
+repolens --index-file .reposcope/backend.json index ./backend --embed
 ```
 
 The default path is `.reposcope/index.json` in the current directory.
@@ -164,9 +164,9 @@ Retrieves the most relevant chunks for a query. Instant — no network call.
 Uses BM25 by default. Automatically switches to hybrid BM25 + vector search if embeddings exist for the current index.
 
 ```bash
-reposcope search "JWT token validation"
-reposcope search "database migration" --top-k 5
-reposcope search "controller routes" --json
+repolens search "JWT token validation"
+repolens search "database migration" --top-k 5
+repolens search "controller routes" --json
 ```
 
 | Flag | Default | Description |
@@ -180,8 +180,8 @@ reposcope search "controller routes" --json
 Retrieves top chunks and sends them to an LLM for a cited answer.
 
 ```bash
-reposcope ask "how does authentication work?"
-reposcope ask "what entities exist in the database?" --top-k 12
+repolens ask "how does authentication work?"
+repolens ask "what entities exist in the database?" --top-k 12
 ```
 
 Falls back to listing top matches with text previews if no LLM key is set.
@@ -192,7 +192,7 @@ Falls back to listing top matches with text previews if no LLM key is set.
 Prints a breakdown of the current index.
 
 ```bash
-reposcope stats
+repolens stats
 ```
 
 ```json
@@ -212,11 +212,11 @@ reposcope stats
 Use `--index-file` to maintain separate indexes. The flag goes before the subcommand.
 
 ```bash
-reposcope --index-file .reposcope/frontend.json index ./frontend
-reposcope --index-file .reposcope/backend.json  index ./backend
+repolens --index-file .reposcope/frontend.json index ./frontend
+repolens --index-file .reposcope/backend.json  index ./backend
 
-reposcope --index-file .reposcope/frontend.json ask "how is routing configured?"
-reposcope --index-file .reposcope/backend.json  ask "what database tables exist?"
+repolens --index-file .reposcope/frontend.json ask "how is routing configured?"
+repolens --index-file .reposcope/backend.json  ask "what database tables exist?"
 ```
 
 ---

@@ -20,7 +20,7 @@ from .retrieval import search_chunks, search_chunks_hybrid
 
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(
-        prog="reposcope",
+        prog="repolens",
         description="Index and query a local codebase.",
     )
     parser.add_argument(
@@ -50,7 +50,7 @@ def main(argv: list[str] | None = None) -> None:
     ask_parser.add_argument("--top-k", type=int, default=8, help="Number of chunks to use.")
 
     subparsers.add_parser("stats", help="Show index statistics.")
-    subparsers.add_parser("configure", help="Set up your LLM API key (saved to ~/.config/reposcope/.env).")
+    subparsers.add_parser("configure", help="Set up your LLM API key (saved to ~/.config/repolens/.env).")
 
     args = parser.parse_args(argv)
 
@@ -66,7 +66,7 @@ def main(argv: list[str] | None = None) -> None:
         elif args.command == "configure":
             _configure()
     except Exception as exc:
-        print(f"reposcope: {exc}", file=sys.stderr)
+        print(f"repolens: {exc}", file=sys.stderr)
         raise SystemExit(1) from exc
 
 
@@ -151,7 +151,7 @@ def _configure() -> None:
         "3": ("OpenAI",           "OPENAI_API_KEY"),
     }
 
-    print("RepoScope — LLM configuration")
+    print("repolens — LLM configuration")
     print()
     print("Which provider do you want to use for 'ask' answers?")
     for num, (label, _) in providers.items():
@@ -160,14 +160,14 @@ def _configure() -> None:
 
     choice = input("Enter 1, 2, or 3: ").strip()
     if choice not in providers:
-        print("reposcope: invalid choice — run 'reposcope configure' again.", file=sys.stderr)
+        print("repolens: invalid choice — run 'repolens configure' again.", file=sys.stderr)
         raise SystemExit(1)
 
     label, env_var = providers[choice]
     print()
     api_key = getpass.getpass(f"{label} API key (input hidden): ").strip()
     if not api_key:
-        print("reposcope: no key entered — nothing saved.", file=sys.stderr)
+        print("repolens: no key entered — nothing saved.", file=sys.stderr)
         raise SystemExit(1)
 
     USER_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
@@ -188,7 +188,7 @@ def _configure() -> None:
     print(f"Saved {env_var} to {USER_CONFIG_ENV}")
     print()
     print("You can now run:")
-    print("  reposcope ask \"How does authentication work?\"")
+    print("  repolens ask \"How does authentication work?\"")
 
 
 if __name__ == "__main__":
