@@ -10,12 +10,30 @@ _OPENAI_EMBED_MODEL = "text-embedding-3-small"
 _OPENAI_EMBED_DIM = 1536
 
 
+_MODEL_CACHE: dict[str, object] = {}
+
+
+def _load_model(model_name: str):
+    """Load and cache the SentenceTransformer model.
+
+    Without caching the model is reconstructed (~80 MB + torch init) on every
+    call — fine for a one-shot CLI index, but it makes per-query embedding in a
+    long-running server unusably slow.
+    """
+    model = _MODEL_CACHE.get(model_name)
+    if model is None:
+        from sentence_transformers import SentenceTransformer
+
+        model = SentenceTransformer(model_name)
+        _MODEL_CACHE[model_name] = model
+    return model
+
+
 def embed_texts(texts: list[str], batch_size: int = 64) -> np.ndarray:
     model_name = os.getenv("REPOSCOPE_EMBED_MODEL", _DEFAULT_MODEL)
 
     try:
-        from sentence_transformers import SentenceTransformer
-        model = SentenceTransformer(model_name)
+        model = _load_model(model_name)
         return model.encode(
             texts,
             batch_size=batch_size,

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 
@@ -73,20 +74,23 @@ def iter_source_files(root: Path, max_file_bytes: int = 750_000) -> list[Path]:
     root = root.resolve()
     files: list[Path] = []
 
-    for path in root.rglob("*"):
-        if not path.is_file():
-            continue
-        if path.name in IGNORED_FILENAMES:
-            continue
-        if any(part in DEFAULT_IGNORE_DIRS for part in path.relative_to(root).parts):
-            continue
-        if detect_language(path) is None:
-            continue
-        try:
-            if path.stat().st_size > max_file_bytes:
+    # os.walk with in-place pruning of dirnames so we never descend into
+    # ignored directories. rglob would still stat every file inside them
+    # (e.g. a bundled venv's site-packages — tens of thousands of files),
+    # which is prohibitively slow on networked / mounted filesystems.
+    for dirpath, dirnames, filenames in os.walk(root):
+        dirnames[:] = [d for d in dirnames if d not in DEFAULT_IGNORE_DIRS]
+        for filename in filenames:
+            if filename in IGNORED_FILENAMES:
                 continue
-        except OSError:
-            continue
-        files.append(path)
+            path = Path(dirpath) / filename
+            if detect_language(path) is None:
+                continue
+            try:
+                if path.stat().st_size > max_file_bytes:
+                    continue
+            except OSError:
+                continue
+            files.append(path)
 
     return sorted(files)
